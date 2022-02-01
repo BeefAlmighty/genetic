@@ -1,0 +1,7 @@
+2022-01-31 19:12:24,934 — __main__ — INFO — HELLO
+2022-01-31 20:18:09,761 — __main__ — ERROR — Can only encode numbers as big as 255 -- 
+2022-01-31 20:18:46,302 — __main__ — ERROR — Can only encode numbers as big as 255 -- 
+2022-01-31 20:18:52,448 — __main__ — ERROR — Can only encode numbers as big as 255 -- 
+2022-01-31 20:19:10,184 — __main__ — ERROR — Can only encode numbers as big as 31 -- 
+2022-01-31 20:25:20,122 — __main__ — ERROR — Bit string must be 5 characters long -- 
+2022-01-31 22:06:09,108 — __main__ — ERROR — Crossing over out of bounds!
