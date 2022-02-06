@@ -31,7 +31,8 @@ class Codon:
     def get_num(self):
         return self.decode()
 
-    def get_bitstring(self):
+    @property
+    def bitstring(self):
         return self._bitstring
 
     def encode(self):
@@ -77,10 +78,10 @@ class Codon:
         if crosspoint <= 0:
             return self, codon
         crosspoint -= 1
-        first_half_1 = self._bitstring[:crosspoint]
-        first_half_2 = codon.get_bitstring()[:crosspoint]
-        second_half_1 = self._bitstring[crosspoint:]
-        second_half_2 = codon.get_bitstring()[crosspoint:]
+        first_half_1 = self.bitstring[:crosspoint]
+        first_half_2 = codon.bitstring[:crosspoint]
+        second_half_1 = self.bitstring[crosspoint:]
+        second_half_2 = codon.bitstring[crosspoint:]
         codon_1 = Codon(bitstring=first_half_1 + second_half_2,
                         length=self.__len__())
         codon_2 = Codon(bitstring=first_half_2 + second_half_1,
@@ -109,16 +110,19 @@ class Chromosome:
     def __repr__(self):
         ans = ""
         for codon in self._codons:
-            ans += codon.get_bitstring() + " | "
+            ans += codon.bitstring + " | "
         return ans.rstrip(" | ")
 
-    def get_codons(self):
+    @property
+    def codons(self):
         return self._codons
 
-    def get_num_codons(self):
+    @property
+    def num_codons(self):
         return self._num_codons
 
-    def get_codon_lengths(self):
+    @property
+    def codon_lengths(self):
         return self._codon_lengths
 
     def fuse(self,
@@ -134,15 +138,15 @@ class Chromosome:
         codons.
         :return: Pair of fused chromosomes.
         """
-        if self._num_codons != len(chrom.get_codons()) \
-                or self.get_codon_lengths() != chrom.get_codon_lengths() \
-                or len(list(crossovers)) != self._num_codons:
+        if self._num_codons != len(chrom.codons) \
+                or self.codon_lengths != chrom.codon_lengths \
+                or len(crossovers) != self.num_codons:
             log.error("Cannot fuse incompatible chromosomes")
             return None, None
         codon_list_1 = []
         codon_list_2 = []
-        for item in zip(self.get_codons(),
-                        chrom.get_codons(),
+        for item in zip(self.codons,
+                        chrom.codons,
                         crossovers):
             cod1, cod2 = item[0].fuse(item[1], item[2])
             codon_list_1.append(cod1)
@@ -156,7 +160,7 @@ class Chromosome:
         codon.  Key value pairs are (codon_index, [positions])
         :return: None
         """
-        codons = self.get_codons()
+        codons = self.codons
         for codon in positions:
             for position in positions[codon]:
                 codons[codon].mutate(position)
