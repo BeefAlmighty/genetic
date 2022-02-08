@@ -1,9 +1,10 @@
 import copy
 
-from src.objects.individual import Individual, Population
+from src.objects.individual import Individual, Population, Fittest
 from src.objects.chromosome import Chromosome, Codon
 from numpy.random import choice
 import random
+from tqdm import tqdm
 from copy import deepcopy
 from common_imports import *
 
@@ -56,16 +57,25 @@ class SimpleExperiment(Experiment):
         return self._pop_size
 
     def run(self):
-        count = 1
-        while count < self.generations:
+        new_pop = Population(
+            [],
+            hall_of_fame=self.population.hall_of_fame
+        )
+        for _ in tqdm(range(self.generations)):
             replaced = 0
-            new_pop = Population([])
+            new_pop = Population(
+                [],
+                hall_of_fame=new_pop.hall_of_fame
+            )
+            # Assign fitness function to population
+            self.population.apply_fitness(self.fitness_func)
+            # Track fittest people
+            if self.population.hall_of_fame is not None:
+                for person in self.population.individuals:
+                    self.population.hall_of_fame.add(person)
             while replaced < self._pop_size:
-                # Assign fitness function to population
-                self.population.apply_fitness(self.fitness_func)
                 # Sample the population for mating
                 mother, father = self.population.sample_population(2)
-
                 if random.random() < self.p_cross:
                     # Perform crossover to produce offspring
                     n_codons = mother.chromosomes[0].num_codons
@@ -81,12 +91,18 @@ class SimpleExperiment(Experiment):
                 # Perform mutations on each child
                 child1.random_mutation(self.p_mutate)
                 child2.random_mutation(self.p_mutate)
+                # Get fitness of the children
+                child1.apply(self.fitness_func)
+                child2.apply(self.fitness_func)
+                # Update the hall of fame if needed
+                if self.population.hall_of_fame:
+                    self.population.hall_of_fame.add(child1)
+                    self.population.hall_of_fame.add(child2)
                 # Remove parents, add children, and update counts
                 new_pop.add({child1, child2})
                 replaced += 2
             if self._pop_size % 2 == 1:
                 new_pop.remove(child1)
-            count += 1
         final_pop = new_pop
         return final_pop
 
@@ -102,31 +118,31 @@ def number_ones(chromosome):
 
 
 def main():
-    nums = choice(range(256), 21)
-    pop = Population()
+
+    # Initialize the population
+    nums = choice(range(256), 50)
+    pop = Population(hall_of_fame=Fittest(5))
+    fit = lambda x:  number_ones(x)
     print("--------- INITIAL POPULATION ----------")
     for item in nums:
         person = Individual([Chromosome([Codon(item)])])
-        person.apply(number_ones)
+        person.apply(fit)
         pop.add(person)
-        print(person)
     print("Initial average fitness: ", pop.average_fitness())
-
 
     final_pop = SimpleExperiment(
         population=pop,
-        generations=150,
+        generations=10000,
         p_cross=.7,
         p_mutate=.001,
-        fitness_func=number_ones
+        fitness_func=fit
     ).run()
 
     print("------ FINAL POPULATION ---------")
-    final_pop.apply_fitness(number_ones)
-    for person in final_pop.individuals:
-        print(person)
+    final_pop.apply_fitness(fit)
     print("Final average fitness: ", final_pop.average_fitness())
-    print(final_pop.population_size)
+    # for person in final_pop.individuals:
+    #     print(person)
 
 if __name__ == "__main__":
     main()

@@ -86,9 +86,13 @@ class Individual:
 
 class Population:
 
-    def __init__(self, individuals: Iterable[Individual] = []):
+    def __init__(self,
+                 individuals: Iterable[Individual] = [],
+                 hall_of_fame = None
+                 ):
         self._individuals = list(individuals)
         self._population_size = len(self._individuals)
+        self._hall_of_fame = hall_of_fame
 
     @property
     def individuals(self):
@@ -97,6 +101,10 @@ class Population:
     @property
     def population_size(self):
         return self._population_size
+
+    @property
+    def hall_of_fame(self):
+        return self._hall_of_fame
 
     def add(self, member):
         if not isinstance(member, Iterable):
@@ -136,8 +144,9 @@ class Population:
         """
         if method == "roulette":
             probs = list(map(lambda x: x.fitness, self.individuals))
+            prob_sum = sum(probs)
             probs = [
-                item / sum(probs) for item in probs
+                item / prob_sum for item in probs
             ]
         else:
             log.error(f"Method {method} not implemented")
@@ -146,18 +155,41 @@ class Population:
         return members
 
 
-def main():
-    chrom = Chromosome([Codon(42)])
-    person = Individual(chrom)
-    print(person)
-    person.random_mutation(.9)
-    print(person)
-    person.random_mutation(.9)
-    print(person)
-    person.random_mutation(1)
-    print(person)
+class Fittest:
+    """
+    Class to maintain the fittest members of a population
+    """
+    def __init__(self, num):
+        self.num = num
+        self.queue = self.num * [Individual([Codon(0)])]
+        for item in self.queue:
+            item.update_fitness(0)
 
-    print(person)
+    def __repr__(self):
+        ans = "{" + f"\n -- Top {self.num} individuals -- \n"
+        for person in self.queue:
+            ans += "\t" + person.__repr__() + "\n"
+        ans += "}"
+        return ans
+
+    def add(self, person: Individual):
+        flag = False
+        if person.fitness >= self.queue[-1].fitness:
+            for idx in range(self.num):
+                if self.queue[idx].fitness < person.fitness:
+                    last = self.queue[idx:-1]
+                    self.queue[idx] = person
+                    flag = True
+                    break
+            if flag:
+                self.queue = self.queue[: idx + 1] + last
+            return None
+        else:
+            return None
+
+
+
+def main():
 
     def number_ones(chromosomes):
         chrom = chromosomes[0]
@@ -168,8 +200,20 @@ def main():
                 ans += 1
         return ans
 
-    person.apply(number_ones)
-    print(person.fitness)
+    nums = choice(range(256), 50)
+    pop = Population()
+    print("--------- INITIAL POPULATION ----------")
+    for item in nums:
+        person = Individual([Chromosome([Codon(item)])])
+        person.apply(number_ones)
+        pop.add(person)
+
+    hof = Fittest(3)
+    for person in pop.individuals:
+        hof.add(person)
+
+
+
 
 
 if __name__ == "__main__":
