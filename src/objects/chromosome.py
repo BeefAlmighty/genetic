@@ -125,6 +125,12 @@ class Chromosome:
     def codon_lengths(self):
         return self._codon_lengths
 
+    def to_list(self):
+        full_chromosome = ""
+        for item in self._codons:
+            full_chromosome += item.bitstring
+        return [full_chromosome]
+
     def fuse(self,
              chrom,
              crossovers: Iterable):
@@ -190,6 +196,8 @@ def main():
     print("Fusion of chromosomes: ", chrom1.fuse(chrom2, [2, 6]))
     chrom2.mutate({0: [1, 3], 1: [0, 1]})
     print("Mutation: ", chrom2)
+
+    print(chrom2.to_list())
 
 if __name__ == "__main__":
     main()

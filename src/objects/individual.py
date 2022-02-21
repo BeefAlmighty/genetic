@@ -1,7 +1,10 @@
 from src.objects.chromosome import Chromosome, Codon
 from typing import List, Iterable
+import matplotlib.pyplot as plt
+import numpy as np
 from numpy.random import choice
 import random
+import copy
 from common_imports import *
 
 log = get_logger(__name__)
@@ -83,6 +86,9 @@ class Individual:
         self.mutate(mutation_dict)
         return None
 
+    def to_list(self):
+        chromes = [item.to_list()[0] for item in self._chromosomes]
+        return "".join(chromes)
 
 class Population:
 
@@ -105,6 +111,17 @@ class Population:
     @property
     def hall_of_fame(self):
         return self._hall_of_fame
+
+    def to_array(self):
+        ans = []
+        for person in self._individuals:
+            person_list = [int(item) for item in person.to_list()]
+            ans.append(person_list)
+        return np.array(ans)
+
+    def draw(self, ax, canvas):
+        ax.imshow(self.to_array())
+        return None
 
     def add(self, member):
         if not isinstance(member, Iterable):
@@ -154,6 +171,53 @@ class Population:
         members = choice(self.individuals, num, p=probs)
         return members
 
+    def evolve_one_step(self,
+                        p_cross,
+                        p_mutate,
+                        fitness_func
+                        ):
+        replaced = 0
+        new_pop = Population(
+            [],
+        )
+        # Assign fitness function to population
+        self.apply_fitness(fitness_func)
+        # Track fittest people
+        if self.hall_of_fame is not None:
+            for person in self._individuals:
+                self.hall_of_fame.add(person)
+        while replaced < self._population_size:
+            # Sample the population for mating
+            mother, father = self.sample_population(2)
+            if random.random() < p_cross:
+                # Perform crossover to produce offspring
+                n_codons = mother.chromosomes[0].num_codons
+                length_codons = mother.chromosomes[0].codon_lengths
+                crossovers = choice(
+                    list(range(1, length_codons + 1)),
+                    n_codons
+                )
+                child1, child2 = mother.fuse(father, crossovers)
+            else:
+                child1 = copy.deepcopy(mother)
+                child2 = copy.deepcopy(father)
+            # Perform mutations on each child
+            child1.random_mutation(p_mutate)
+            child2.random_mutation(p_mutate)
+            # Get fitness of the children
+            child1.apply(fitness_func)
+            child2.apply(fitness_func)
+            # Update the hall of fame if needed
+            if self.hall_of_fame:
+                self.hall_of_fame.add(child1)
+                self.hall_of_fame.add(child2)
+            # Remove parents, add children, and update counts
+            new_pop.add({child1, child2})
+            replaced += 2
+        if self._population_size % 2 == 1:
+            new_pop.remove(child1)
+        self._individuals = new_pop.individuals
+        return None
 
 class Fittest:
     """
@@ -200,7 +264,7 @@ def main():
                 ans += 1
         return ans
 
-    nums = choice(range(256), 50)
+    nums = choice(range(256), 5)
     pop = Population()
     print("--------- INITIAL POPULATION ----------")
     for item in nums:
@@ -212,6 +276,7 @@ def main():
     for person in pop.individuals:
         hof.add(person)
 
+    print(pop.to_array())
 
 
 
